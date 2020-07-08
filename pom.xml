@@ -11,6 +11,7 @@
     <modules>
         <module>request-handle</module>
       <module>webapp-test</module>
+        <module>design-philosophy</module>
     </modules>
 
     <name>tomcat-analysis</name>

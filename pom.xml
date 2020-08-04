@@ -12,6 +12,7 @@
       <module>request-handle</module>
       <module>webapp-test</module>
       <module>design-philosophy</module>
+      <module>01-socket</module>
     </modules>
 
     <name>tomcat-analysis</name>

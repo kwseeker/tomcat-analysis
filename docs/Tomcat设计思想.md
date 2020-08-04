@@ -1,5 +1,7 @@
 # Tomcat设计思想
 
+文章中仅为个人观点，有大量待考证的地方。
+
 ## Tomcat核心设计
 
 **要做的三件事**：
@@ -31,12 +33,63 @@ Connector + Container
 首先需要补习一下HTTP（超文本传输协议）的原理和规范（后面在《HTTP协议规范和通信原理.md》中深入总结）：
 
 + HTTP请求/响应组成
+
 + HTTP协议族
+
 + 基于HTTP协议通信原理
 
 + TCP/IP通信原理与Socket套接字接口
 
   从常见的涉及通信的框架底层实现一般都会看到Socket。
+  
+  处理请求的Socket默认实现类SocksSocketImpl（即使是http请求，在传输层看来也是TCP包）。
+  
+  而Socket里面有一个FileDescriptor的东西，应该就是对应网络底层设备的“文件”了。
+  
+  FileDescriptor又被NIO包装了一次。但是数据传输都是通过FileDescriptor。
+  
+  ```java
+  //获取输入输出流
+  Socket::getInputStream()
+  Socket::getOutputStream()
+  ```
+
+最简Web服务器工作流程：
+
+１）创建ServerSocket,并启动8080监听连接accept();
+
+２）有连接(Socket)接入获取输入流getInputStream();读取read()请求处理；
+
+下面已经是经过层层解包，获取的请求报文了。
+
+```txt
+GET /staticResource HTTP/1.1
+User-Agent: PostmanRuntime/7.22.0
+Accept: */*
+Cache-Control: no-cache
+Postman-Token: 402ed828-5846-44d2-ad7b-2dcee3d89d42
+Host: localhost:8080
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+```
+
+３）获取输出流getOutputStream()，将请求处理结果写入write()到输出流；
+
+```java
+//这里报文就是一串HTTP Response字符串，没有引入HTTP协议处理（HTTP协议处理的结果也就是这么一串字符串？）
+String errorMessage = "HTTP/1.1 404 File Not Found\r\n" +
+    "Content-Type: text/html\r\n" +
+    "Content-Length: 23\r\n" +
+    "\r\n" +
+    "<h1>File Not Found</h1>";
+output.write(errorMessage.getBytes());
+```
+
+之后经过层层封包经过物理层传输出去。
+
+４）关闭Socket连接close()。
+
+
 
 ## 设计简单的Servlet容器
 

@@ -24,6 +24,12 @@ Connector + Container
 
 容器从连接器接收到 requset 和 response 对象之后调用 servlet 的 service 方法用于响应。
 
+**设计流程**：
+
+１）Socket实现处理Http请求;
+
+２）引入Servlet接口规范；将业务逻辑抽离到Servlet。
+
 
 
 ## 设计简单的Web服务器
@@ -92,6 +98,69 @@ output.write(errorMessage.getBytes());
 
 
 ## 设计简单的Servlet容器
+
+### 核心类(规范)
+
++ **ServletRequest**
+
+  定义请求的接口，核心包括`输入流`以及读取输入流后获取`请求报文内容`的方法；
+
+  **读输入流->解析请求报文**
+
++ **ServletResponse**
+
+  定义回复的接口，核心包括`输出流`以及设置`回复报文内容`的方法
+
+  **构造回复报文->写输出流**
+
+  里面还为输出流封装了一个接口Writer.
+
++ **Servlet**
+
+  前面的类封装了那些比较固定操作，如流读写、报文内容获取或构造；所有的请求的这些操作都是一样的；
+
+  而**Servlet则定义哪些不同的业务流程**，比如商品服务获取商品信息，订单服务下订单等。
+
+  > Servlet 类似多线程的Task, Servlet容器类似多线程的ThreadPoolExecutor
+
++ **ServletConfig**
+
+### Java.net
+
++ **URL**
+
+  URL是URI的子集, URI = URL + URN(基本没什么应用); 
+
+  统一资源定位符类;指向www上的某个资源;
+
+  资源可以是文件(文档/图片/视频)/目录/服务(数据库查询)/指向搜索引擎(?)等等;
+
+  ```shell
+  # URL的格式
+  # URL的第一部分是URL协议，第二部分是服务器的位置，第三部分是资源路径。
+  <scheme>://<user>:<password>@<host>:<port>/<path>;<params>?<query>#<frag>
+  # 协议方案名      登录信息      服务器地址/端口 资源文件路径 参数 查询字符串 片段标识符 
+  # TODO:第三部分定位资源的原理?
+  # 示例
+  ftp://ftp.is.co.za/rfc/rfc1808.txt
+  http://www.ietf.org/rfc/rfc2396.txt
+  ldap://[2001:db8::7]/c=GB?objectClass?one
+  mailto:John.Doe@example.com
+  news:comp.infosystems.www.servers.unix
+  tel:+1-816-555-1212
+  telnet://192.0.2.16:80/
+  urn:oasis:names:specification:docbook:dtd:xml:4.1.2
+  ```
+
+  URL支持的协议: http/ftp/file/mailto/telnet/...;
+
+  URL类的数据结构也正是对应着上面`<scheme>://<user>:<password>@<host>:<port>/<path>;<params>?<query>#<frag>`。
+
++ **URLClassLoader**
+
+  通过URL定位Class资源，然后进行加载。支持从文件目录加载、从Jar包加载、从Http远程加载。
+
+  
 
 ## 引入连接器
 

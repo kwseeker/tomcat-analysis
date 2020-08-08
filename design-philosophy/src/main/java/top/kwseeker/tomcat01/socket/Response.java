@@ -1,9 +1,6 @@
 package top.kwseeker.tomcat01.socket;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 
 /*
   HTTP Response = Status-Line
@@ -45,7 +42,7 @@ public class Response {
                 if(request.getUri().endsWith(".html")) {
                     heads.append("HTTP/1.1 200 OK\r\n")          //注意必须回车换行结尾
                             .append("Content-Type: text/html\r\n")
-                            .append(String.format("Content-Length: %d\n", body.toString().getBytes().length))
+                            .append(String.format("Content-Length: %d\r\n", body.toString().getBytes().length))
                             .append("\r\n");
                 } else if(request.getUri().endsWith(".gif")) {
                     //图片资源
@@ -53,13 +50,18 @@ public class Response {
                             //.append("Content-Type: image/gif\r\n")
                             .append("Content-Type: application/octet-stream\r\n")
                             .append("Content-Transfer-Encoding: binary\r\n")
-                            .append(String.format("Content-Length: %d\n", body.toString().getBytes().length))
+                            .append(String.format("Content-Length: %d\r\n", body.toString().getBytes().length))
                             .append("\r\n");
                 }
 
                 System.out.println(heads + "" + body);
-                output.write(heads.toString().getBytes());
-                output.write(body.toString().getBytes());
+                //output.write(heads.toString().getBytes());
+                //output.write(body.toString().getBytes());
+                PrintWriter writer = new PrintWriter(output, true); //TODO: autoFlush设置true或false为何效果一样,下面body还是可以正常显示？做特殊处理了不写body不flush?
+                writer.println(heads.toString());
+                writer.println(body.toString());
+                //writer.println(heads + "" + body);
+                //writer.flush();
             } else {
                 // file not found
                 String errorMessage = "HTTP/1.1 404 File Not Found\r\n" +

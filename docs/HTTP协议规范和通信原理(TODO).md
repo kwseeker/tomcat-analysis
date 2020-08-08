@@ -1,6 +1,6 @@
 # HTTP协议规范和通信原理
 
-## HTTP通信原理
+## HTTP通信流程原理
 
 首先使用抓包工具`WireShark`看下网络连接过程(`Loopback:Io(port8080)`)：
 

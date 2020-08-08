@@ -16,7 +16,7 @@ public class HttpServer {
      *  The working directory is the location in the file system
      *  from where the java command was invoked.
      */
-    public static final String WEB_ROOT = System.getProperty("user.dir") + File.separator  + "webroot";
+    public static final String WEB_ROOT = System.getProperty("user.dir") + File.separator + "design-philosophy" + File.separator + "webroot";
 
     private static final String SHUTDOWN_COMMAND = "/SHUTDOWN";
     private boolean shutdown = false;

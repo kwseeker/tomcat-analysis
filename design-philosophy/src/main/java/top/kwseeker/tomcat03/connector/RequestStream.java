@@ -1,8 +1,8 @@
 package top.kwseeker.tomcat03.connector;
 
-import org.apache.catalina.util.StringManager;
 import top.kwseeker.tomcat03.connector.http.Constants;
 import top.kwseeker.tomcat03.connector.http.HttpRequest;
+import top.kwseeker.tomcat03.util.StringManager;
 
 import javax.servlet.ServletInputStream;
 import java.io.IOException;

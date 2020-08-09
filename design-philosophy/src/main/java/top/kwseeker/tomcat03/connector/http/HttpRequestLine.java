@@ -2,9 +2,13 @@ package top.kwseeker.tomcat03.connector.http;
 
 /**
  * 请求行
+ * 示例：
+ *  GET /staticResource HTTP/1.1
+ *  method   uri        protocol
  */
 final class HttpRequestLine {
 
+    //请求行参数太长的话可以动态扩容
     public static final int INITIAL_METHOD_SIZE = 8;
     public static final int INITIAL_URI_SIZE = 64;
     public static final int INITIAL_PROTOCOL_SIZE = 8;
@@ -12,11 +16,11 @@ final class HttpRequestLine {
     public static final int MAX_URI_SIZE = 32768;
     public static final int MAX_PROTOCOL_SIZE = 1024;
 
-    public char[] method;
-    public int methodEnd;
-    public char[] uri;
-    public int uriEnd;
-    public char[] protocol;
+    public char[] method;           //GET POST PUT DELETE OPTIONS etc
+    public int methodEnd;           //method char数组末尾索引+1, 比如GET，methodEnd=3, 0-2存储"GET"
+    public char[] uri;              //请求资源路径 /<path>;<params>?<query>#<frag>，如上请求行的 /staticResource
+    public int uriEnd;              //uri char数组末尾索引+1
+    public char[] protocol;         //请求协议，如HTTP/1.1
     public int protocolEnd;
 
     // ----------------------------------------------------------- Constructors

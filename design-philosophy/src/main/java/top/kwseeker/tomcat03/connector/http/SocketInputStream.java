@@ -1,6 +1,6 @@
 package top.kwseeker.tomcat03.connector.http;
 
-import org.apache.catalina.util.StringManager;
+import top.kwseeker.tomcat03.util.StringManager;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -20,9 +20,9 @@ public class SocketInputStream extends InputStream {
 
     protected static StringManager sm = StringManager.getManager(Constants.Package);
 
-    protected byte buf[];                   //Internal buffer.
-    protected int count;                    //Last valid byte.
-    protected int pos;                      //Position in the buffer.
+    protected byte buf[];                   //用于存储请求报文
+    protected int count;                    //Last valid byte.报文总长度
+    protected int pos;                      //Position in the buffer.报文当前解析到的位置（请求行、请求头、请求体按序解析）
     protected InputStream is;
 
     // ----------------------------------------------------------- Constructors
@@ -42,9 +42,7 @@ public class SocketInputStream extends InputStream {
     // --------------------------------------------------------- Public Methods
 
     /**
-     * Read the request line, and copies it to the given buffer. This
-     * function is meant to be used during the HTTP request header parsing.
-     * Do NOT attempt to read the request body using it.
+     * 读取请求行并解析请求method uri protocol到给定的buffer(即HttpRequestLine类)
      *
      * @param requestLine Request line object
      * @throws IOException If an exception occurs during the underlying socket
@@ -68,12 +66,10 @@ public class SocketInputStream extends InputStream {
             }
         } while ((chr == CR) || (chr == LF));
         if (chr == -1)
-            throw new EOFException
-                    (sm.getString("requestStream.readline.error"));
+            throw new EOFException(sm.getString("requestStream.readline.error"));
         pos--;
 
         // Reading the method name
-
         int maxRead = requestLine.method.length;
         int readStart = pos;
         int readCount = 0;
@@ -98,8 +94,7 @@ public class SocketInputStream extends InputStream {
             if (pos >= count) {
                 int val = read();
                 if (val == -1) {
-                    throw new IOException
-                            (sm.getString("requestStream.readline.error"));
+                    throw new IOException(sm.getString("requestStream.readline.error"));
                 }
                 pos = 0;
                 readStart = 0;
@@ -121,29 +116,24 @@ public class SocketInputStream extends InputStream {
         readCount = 0;
 
         space = false;
-
         boolean eol = false;
-
         while (!space) {
             // if the buffer is full, extend it
             if (readCount >= maxRead) {
                 if ((2 * maxRead) <= HttpRequestLine.MAX_URI_SIZE) {
                     char[] newBuffer = new char[2 * maxRead];
-                    System.arraycopy(requestLine.uri, 0, newBuffer, 0,
-                            maxRead);
+                    System.arraycopy(requestLine.uri, 0, newBuffer, 0, maxRead);
                     requestLine.uri = newBuffer;
                     maxRead = requestLine.uri.length;
                 } else {
-                    throw new IOException
-                            (sm.getString("requestStream.readline.toolong"));
+                    throw new IOException(sm.getString("requestStream.readline.toolong"));
                 }
             }
             // We're at the end of the internal buffer
             if (pos >= count) {
                 int val = read();
                 if (val == -1)
-                    throw new IOException
-                            (sm.getString("requestStream.readline.error"));
+                    throw new IOException(sm.getString("requestStream.readline.error"));
                 pos = 0;
                 readStart = 0;
             }
@@ -172,23 +162,19 @@ public class SocketInputStream extends InputStream {
             if (readCount >= maxRead) {
                 if ((2 * maxRead) <= HttpRequestLine.MAX_PROTOCOL_SIZE) {
                     char[] newBuffer = new char[2 * maxRead];
-                    System.arraycopy(requestLine.protocol, 0, newBuffer, 0,
-                            maxRead);
+                    System.arraycopy(requestLine.protocol, 0, newBuffer, 0, maxRead);
                     requestLine.protocol = newBuffer;
                     maxRead = requestLine.protocol.length;
                 } else {
-                    throw new IOException
-                            (sm.getString("requestStream.readline.toolong"));
+                    throw new IOException(sm.getString("requestStream.readline.toolong"));
                 }
             }
             // We're at the end of the internal buffer
             if (pos >= count) {
-                // Copying part (or all) of the internal buffer to the line
-                // buffer
+                // Copying part (or all) of the internal buffer to the line buffer
                 int val = read();
                 if (val == -1)
-                    throw new IOException
-                            (sm.getString("requestStream.readline.error"));
+                    throw new IOException(sm.getString("requestStream.readline.error"));
                 pos = 0;
                 readStart = 0;
             }
@@ -204,11 +190,11 @@ public class SocketInputStream extends InputStream {
         }
 
         requestLine.protocolEnd = readCount;
-
     }
 
 
     /**
+     * 读取请求头，并解析请求头内容到HttHeader对象中
      * Read a header, and copies it to the given buffer. This
      * function is meant to be used during the HTTP request header parsing.
      * Do NOT attempt to read the request body using it.
@@ -220,7 +206,6 @@ public class SocketInputStream extends InputStream {
      */
     public void readHeader(HttpHeader header)
             throws IOException {
-
         // Recycling check
         if (header.nameEnd != 0)
             header.recycle();
@@ -357,7 +342,6 @@ public class SocketInputStream extends InputStream {
             }
 
             int nextChr = read();
-
             if ((nextChr != SP) && (nextChr != HT)) {
                 pos--;
                 validLine = false;
@@ -379,13 +363,9 @@ public class SocketInputStream extends InputStream {
                 header.value[readCount] = ' ';
                 readCount++;
             }
-
         }
-
         header.valueEnd = readCount;
-
     }
-
 
     /**
      * Read byte.
@@ -397,31 +377,8 @@ public class SocketInputStream extends InputStream {
             if (pos >= count)
                 return -1;
         }
-        return buf[pos++] & 0xff;
+        return buf[pos++] & 0xff;   //主要是防止byte与int隐式转换，高位符号置位，
     }
-
-
-    /**
-     *
-     */
-    /*
-    public int read(byte b[], int off, int len)
-        throws IOException {
-
-    }
-    */
-
-
-    /**
-     *
-     */
-    /*
-    public long skip(long n)
-        throws IOException {
-
-    }
-    */
-
 
     /**
      * Returns the number of bytes that can be read from this input
@@ -431,7 +388,6 @@ public class SocketInputStream extends InputStream {
             throws IOException {
         return (count - pos) + is.available();
     }
-
 
     /**
      * Close the input stream.
@@ -445,15 +401,12 @@ public class SocketInputStream extends InputStream {
         buf = null;
     }
 
-
     // ------------------------------------------------------ Protected Methods
-
 
     /**
      * Fill the internal buffer using data from the undelying input stream.
      */
-    protected void fill()
-            throws IOException {
+    protected void fill() throws IOException {
         pos = 0;
         count = 0;
         int nRead = is.read(buf, 0, buf.length);
@@ -461,6 +414,4 @@ public class SocketInputStream extends InputStream {
             count = nRead;
         }
     }
-
-
 }

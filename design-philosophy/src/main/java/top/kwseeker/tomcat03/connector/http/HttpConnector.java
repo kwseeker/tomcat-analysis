@@ -10,6 +10,7 @@ public class HttpConnector implements Runnable {
     boolean stopped;
     private String scheme = "http";     //scheme对应http URL中的scheme, 代表协议类型
 
+    @Override
     public void run() {
         ServerSocket serverSocket = null;
         int port = 8080;

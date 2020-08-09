@@ -166,7 +166,13 @@ output.write(errorMessage.getBytes());
 
 连接器就是一个Socket服务线程，监听连接请求。并将建立的连接（Socket）交给一个新建的Processor处理（即每建立一个Socket连接都要新建一个Processor处理）。
 
+### 附录
 
++ ResouceBundle
+
+  用于资源包加载，实现国际化的类。
+
+  
 
 ## 将处理封装成容器
 

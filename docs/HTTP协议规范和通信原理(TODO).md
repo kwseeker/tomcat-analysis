@@ -12,3 +12,11 @@
 >
 > `Charles`适用于`HTTP`/`HTTPS`抓包。
 
+## HTTP Request Response 报文结构
+
+MDN讲的挺全的，查MDN吧。
+
+[MDN HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP)
+
+[HTTP headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers)
+

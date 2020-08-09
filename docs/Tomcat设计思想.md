@@ -164,6 +164,10 @@ output.write(errorMessage.getBytes());
 
 ## 引入连接器
 
+连接器就是一个Socket服务线程，监听连接请求。并将建立的连接（Socket）交给一个新建的Processor处理（即每建立一个Socket连接都要新建一个Processor处理）。
+
+
+
 ## 将处理封装成容器
 
 ## 协作组件的生命周期同步管理

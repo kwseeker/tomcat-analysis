@@ -2,7 +2,6 @@ package top.kwseeker.tomcat02.servletContainer1.server1;
 
 import top.kwseeker.tomcat02.servletContainer1.Request;
 import top.kwseeker.tomcat02.servletContainer1.Response;
-import top.kwseeker.tomcat02.servletContainer1.StaticResourceProcessor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +41,7 @@ public class HttpServer1 {
                 request.parse();
                 //将响应输出流封装成Response,并将Request对象传参（为了得到uri）
                 Response response = new Response(output);
-                response.setRequest(request);
+                //response.setRequest(request);
 
                 if (request.getUri().startsWith("/servlet/")) {     //Get http://localhost:8080/servlet/PrimitiveServlet
                     ServletProcessor1 processor = new ServletProcessor1();

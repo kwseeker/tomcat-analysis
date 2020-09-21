@@ -522,7 +522,7 @@ Tomcat类库：`WEB-INF/classes` `WEB-INF/lib`。
 
     创建类加载器、设置类库、设置`classpath`、设置权限、开启新的线程用于重新加载。
 
-+ 实例
++ 示例
 
   `ex08.pyrmont`
 
@@ -557,9 +557,44 @@ Tomcat类库：`WEB-INF/classes` `WEB-INF/lib`。
 
 ### 引入Server服务器组件
 
-用于优雅地管理连接器和Servlet容器启动关闭，而不需要再一个个地启动和关闭连接器和容器了。
+用于优雅地管理连接器和`Servlet`容器启动关闭，而不需要再一个个地启动和关闭连接器和容器了。
 
-#### Tomcat启动/关闭流程
+#### Server组件工作原理
+
++ 接口
+
+  + `org.apache.catalina.Server`
+
+    定义全局的命名资源（`Servlet`?），指定启动端口，设置关闭指令，添加/删除`Service`，有初始化方法。
+
+    重点关注初始化方法`initialize()`用于初始化`Service`, 里面其实是获取`Service`的容器，然后遍历执行`Service`的`initialize()`方法。
+
+    应该可以说Tomcat的启动就是从`Server`组件的start()方法开始的，然后一层层深入初始化里面的组件和容器，最终加载`Servlet`。
+
+    启动逻辑仍然是基于观察者模式的“链式反应”那一套生命周期管理流程。
+
+  + `org.apache.catalina.Service`
+
+    表示服务，可以**有一个容器和多个连接器**（什么意义？没有明白为何引入这个组件？）。
+
+    可指定容器，添加/删除连接器，有初始化方法（作为链式反应的一环）。
+
++ 实现
+
+  + `StandardServer`
+  + `StandardService`
+
++ 示例
+
+  `ex14.pyrmont`
+
+  ```java
+  
+  ```
+
+  
+
+### Tomcat启动/关闭流程
 
 ##### Linux/Unix启动脚本
 
@@ -567,7 +602,9 @@ Tomcat类库：`WEB-INF/classes` `WEB-INF/lib`。
 
 ## 整体优化
 
-### 引入XML实现配置软编码（Disgester）
+### 引入XML实现配置软编码（`Disgester`）
+
+tonguo
 
 ### 引入关闭钩子
 

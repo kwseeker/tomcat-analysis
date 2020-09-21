@@ -20,204 +20,13 @@ Tomcat最核心的东西就是建立Socket连接，读请求报文输入流，�
 
 然后就是围绕着这个将通用的逻辑模块化(如：连接器`Connector`、各级容器[Service、Engine、Host、Context、Wrapper、)，将变化的部分抽离出来（如：`Servlet`、配置）。
 
-## Tomcat架构和组件
-
-![](../img/Tomcat组件及架构.jpg)
-
-**核心组件：**
-
-+ **Connector**
-
-+ **Container**
-
-  容器（Container）主要包括四种，Engine、Host、Context和Wrapper。
-
-  + Server（不是Container）
-
-    Tomcat包启动在某个端口上的服务实例。一台物理服务器可以启动多个`Server`在不同的端口上。
-  
-  + Service（不是Container）
-  
-+ **Engine**(?)
-  
-+ **Host**
-  
-    虚拟主机。比如一个Tomcat要支持多个域名。
-  
-    ```xml
-    <Host name="www.ramki.com" appbase="ramki_webapps" />
-    ```
-  
-  + **Context**
-  
-    叫做上下文容器，我们可以看成`应用服务`，每个Host里面可以运行多个应用服务。同一个Host里面不同的Context，其contextPath必须不同，默认Context的contextPath为空格("")或斜杠(/)。
-  
-  + **Wrapper**
-  
-    Servlet的抽象和包装，每个Context可以有多个Wrapper，用于支持不同的Servlet。另外，每个JSP其实也是一个个的Servlet。
-  
-  容器中为何要引入这么多种容器类型？
-  
-  个人认为为了支持分门别类地放更多的`Servlet`。比如图书馆，存书时是把书直接堆在一起还是按大类分馆，按中间类分楼层，按小类分室，按细分类分架。类分地越细，某一类的通用处理就越容易加入。
-
-
-
-**辅助组件：**
-
-+ **listener**
-
-  实现生命周期管理。
-
-+ **Resource/ResourceLink**
-
-  定义`Servlet`等资源的。
-
-+ **Realm**
-
-  安全认证相关控制。
-
-  可以在这里面添加BASIC、DEGEST、FORM等等用户认证实现。
-
-+ **Loader**
-
-  Servlet类加载器。
-
-+ JNDI
-+ Cluster
-+ Manager
-
-
-
-Engine -> Host -> Context -> Wrapper。
-
-> 
->
-> **Server** 
->
-> ​		Tomcat包在物理服务器启动后的实例，
->
-> ​		靠端口区分，一台机器上可以有多个Server启动在不同端口。
->
-> **Service**(?)
->
-> ​		不明白为何要这一层？支持多域名（可能一台主机被分配多个域名）？
->
-> ​		通常对应着一个Engine容器，是多个Connector和一个Executor池和一个Engine的集合; 
->
-> Server和Service并不是Container实现类。
->
-> 
->
-> ​		一一对应某个Service。通过name匹配Service, 并附加host属性。
->
-> **Host**(?)
->
-> ​		支持多个Web应用，多应用分发逻辑应该在这里实现的？
->
-> ​		通过appBase目录区分，一个Engine可以有多个Host。
->
-> 
->
-> ​		表示一个 Web 应用（对应一个appBase目录下的某个应用文件夹）;
->
-> ​		通过appBase目录下的子目录区分，一个Host可以有多个Context。
->
-> 
->
-> ​		一个Servlet的封装。一个 context 包含一个或多个wrapper。
-
-这部分只分析`Context`和`Wrapper`容器的引入。
-
-## 生命周期管理
-
-### Tomcat启动流程
-
-### 配置初始化与加载
-
-### `Servlet`生命周期
-
-## 请求处理流程
-
-**Tomcat的端口：**
-
-+ 8005
-
-  关闭控制端口，监听关闭命令。
-
-+ 8009
-
-  集群通信端口，与其他服务器通信，如与Apache、Nginx、其他Tomcat服务器通信，基于AJP协议，可用于请求转发。
-
-+ 8080
-
-  默认的http监听端口。
-
-+ 8443
-
-  默认的https监听端口。
-
-### Tomcat Server处理http请求的过程
-
-
-
-假设来自客户的请求为：
-http://localhost:8080/wsota/wsota_index.jsp
-
-1) 请求被发送到本机端口8080，被在那里侦听的Coyote HTTP/1.1 Connector获得
-2) Connector把该请求交给它所在的Service的Engine来处理，并等待来自Engine的回应
-3) Engine获得请求localhost/wsota/wsota_index.jsp，匹配它所拥有的所有虚拟主机Host
-4) Engine匹配到名为localhost的Host（即使匹配不到也把请求交给该Host处理，因为该Host被定义为该Engine的默认主机）
-5) localhost Host获得请求/wsota/wsota_index.jsp，匹配它所拥有的所有Context
-6) Host匹配到路径为/wsota的Context（如果匹配不到就把该请求交给路径名为""的Context去处理）
-7) path="/wsota"的Context获得请求/wsota_index.jsp，在它的mapping table中寻找对应的servlet
-8) Context匹配到URL PATTERN为*.jsp的servlet，对应于JspServlet类
-9) 构造HttpServletRequest对象和HttpServletResponse对象，作为参数调用JspServlet的doGet或doPost方法
-10)Context把执行完了之后的HttpServletResponse对象返回给Host
-11)Host把HttpS**要做的三件事**：
-
-+ 创建request对象，填充请求的参数、头部、cookies、查询字符串、URI等等。
-
-  实现javax.servlet.ServletRequest 或 javax.servlet.http.ServletRequest 接口。
-
-+ 创建response对象，用于将响应发送回客户端。
-
-  实现javax.servlet.ServletResponse 或 javax.servlet.http.ServletResponse 接口。
-
-+ 调用servlet的service方法，并传入request和response对象，从request对象取值，处理，写入response对象。ervletResponse对象返回给Engine
-12)Engine把HttpServletResponse对象返回给Connector
-13)Connector把HttpServletResponse对象返回给客户browser
-
-## `JSP`引擎
-
-## 连接器`NIO2`多路复用模型
-
-## Session处理
-
-
-
-
-
-## Tomcat核心设计
-
-核心的东西就是Socket连接，读请求报文输入流，处理后写回复报文输出流。
-
-然后就是围绕着这个将通用的逻辑模块化，将变化的部分抽离出来，通过“容器”加载。
-
-
-
-**Catalina核心架构**：
-
-Connector + Container
-
-连接器是用来“连接”容器里边的请求的，为接收到每一个 HTTP 请求构造一个 request 和 response 对象。
-
-容器从连接器接收到 requset 和 response 对象之后调用 servlet 的 service 方法用于响应。
+**设计流程**：
 
 **设计流程**：
 
 1. **Socket实现处理`HTTP`请求**
 
-2. **引入`Servlet`接口规范；将业务逻辑抽离到`Servlet`**Loading the Servlet
+2. **引入`Servlet`接口规范；将业务逻辑抽离到`Servlet`**
    StandardWrapper 实现了 Wrapper 接口的 load 方法, load 方法调用 loadServlet
    方法来加载一个 servlet 类,并调用该 servlet 的 init 方法,传递一个
    javax.servlet.ServletConfig 实例。这里是 loadServlet 是如何工作的。
@@ -226,7 +35,7 @@ Connector + Container
    // Nothing to do if we already have an instance or an instance pool
    if (!singleThreadModel && (instance != null))
    return instance;
-   如果该实例是 null 或者是一个 STM servlet,继续该方法的其它部分:.****
+   如果该实例是 null 或者是一个 STM servlet,继续该方法的其它部分:.
 
 3. **引入连接器`Connector`（接收`HTTP`连接请求,并分发给`Container`处理）**
 
@@ -260,19 +69,315 @@ Connector + Container
    `Context`则使用`Map`存储`Wrapper`, 还包含`servletMappings`存储请求和处理的映射关系。
    `Mapper`
 
-5. 
+5. **引入生命周期管理**
 
+6. **拓展组件**
 
+   自定义类加载器
 
+   Server、Service、Engine、Host。
 
+7. **引入日志组件**
 
-**遗留问题**：
+8. **优化措施**
 
-1）请求头的解析
+   Degester实现XML软编码配置
 
-​      各部分工作原理，如`authorization`,`cookie`,`connection`怎么发挥作用的。
+   关闭钩子
 
-2）为什么需要Service、Engine ? 多应用，请求是如何分发到对应Context的？
+   部署器
+
+   Servlet管理
+
+## Tomcat架构和组件
+
+![](../img/Tomcat组件及架构.jpg)
+
+**核心组件：**
+
++ **Connector**
+
+    连接器是用来“连接”请求和Servlet容器的，为接收到每一个 HTTP 请求构造一个 request 和 response 对象。
+
+    容器从连接器接收到 requset 和 response 对象之后调用 servlet 的 service 方法用于响应。
+
++ **Server**(不算核心组件)
+
+    Tomcat包启动在某个端口上的服务实例。一台物理服务器可以启动多个`Server`在不同的端口上。
+
+    负责管理和启动各个Service，同时监听 8005 端口发过来的 shutdown 命令，可以优雅地启动和关闭整个容器 ；
+
++ **Service**(不算核心组件)
+
+     包含 Connectors、Container(只有一个) 两个核心组件，以及多个功能组件。
+
++ Container
+
+  容器（Container）主要包括四种，Engine、Host、Context和Wrapper。
+
+  + **Engine**
+
+    Servlet 的顶层容器，包含一个或多个 Host 子容器，
+
+    主要职责为：使用默认的基础Valve创建标准Engine组件。
+
+  + **Host**
+
+    虚拟主机。一个Host通常对应一个IP、域名，有独立的资源路径，如webapps。
+
+    负责 web 应用的部署和 Context 的创建。
+
+    通过Host可以支持部署多个Web应用（比如app1、app2、...）。
+
+    比如一个Tomcat要支持多个域名。
+
+    ```xml
+    <Host name="www.ramki.com" appbase="ramki_webapps" />
+    ```
+
+  + **Context**
+
+    叫做上下文容器，每个Host里面可以运行多个应用服务app1, app2, ...。同一个Host里面不同的Context，其contextPath必须不同，默认Context的contextPath为空格("")或斜杠(/)。
+
+  + **Wrapper**
+
+    Servlet的抽象和包装，每个Context可以有多个Wrapper，用于支持不同的Servlet。另外，每个JSP其实也是一个个的Servlet。
+
+  容器中为何要引入这么多种容器类型？
+
+  个人认为为了支持分门别类地放更多的`Servlet`。比如图书馆，存书时是把书直接堆在一起还是按大类分馆，按中间类分楼层，按小类分室，按细分类分架。类分地越细，某一类的通用处理就越容易。
+
+**组件的关系**：
+
+`ex14.pyrmont`:
+
+```java
+Connector connector = new HttpConnector();
+
+Wrapper wrapper1 = new StandardWrapper();					//wrapper
+wrapper1.setName("Primitive");
+wrapper1.setServletClass("PrimitiveServlet");	//wrapper包装Servlet
+Wrapper wrapper2 = new StandardWrapper();
+wrapper2.setName("Modern");
+wrapper2.setServletClass("ModernServlet");
+
+Context context = new StandardContext();							//context
+context.setPath("/app1");
+context.setDocBase("app1");
+context.addChild(wrapper1);		//context包装wrapper
+context.addChild(wrapper2);
+
+Host host = new StandardHost();                                  				//Host
+host.addChild(context);				//context加入host
+host.setName("localhost");		//指定域名
+host.setAppBase("webapps");//指定资源路径
+
+Loader loader = new WebappLoader();	//Servlet类加载器
+context.setLoader(loader);
+context.addServletMapping("/Primitive", "Primitive");	//路由映射
+context.addServletMapping("/Modern", "Modern");
+
+Engine engine = new StandardEngine();                                 //engine
+engine.addChild(host);
+engine.setDefaultHost("localhost");		//host加入到engine
+
+Service service = new StandardService();                              //service
+service.setName("Stand-alone Service");
+service.addConnector(connector);
+service.setContainer(engine);				//将engine设置为service的容器，一个Service只有一个Engine容器
+
+Server server = new StandardServer();                                 	//Server
+server.addService(service);						//service加入到server中
+```
+
+**辅助组件：**
+
++ **listener**
+
+  实现生命周期管理。
+
++ **Resource/ResourceLink**
+
+  定义`Servlet`等资源的。
+
++ **Realm**
+
+  安全认证相关控制。
+
+  可以在这里面添加BASIC、DEGEST、FORM等等用户认证实现。
+
++ **Loader**
+
+  Servlet类加载器。
+
++ JNDI
+
++ Cluster
+
++ Manager
+
+  管理Servlet的。
+
+## 生命周期管理
+
+这部分是最重要的。
+
+Catalina启动的时候，组件同步启动；关闭的时候组件同步关闭。如容器停止的时候要唤醒所有加载的`Servlet`的`destory`方法，`session`管理器保存session到二级存储器。
+
+关注内容：
+
++ 生命周期管理的目的
+
+  为了方便管理组件和容器的创建和销毁。
+
++ 事件类型
+
+  启动前、启动中、启动后，关闭前、关闭中、关闭后。（新版本定义了从创建、启动、到停止、销毁共 12 种状态）。
+
++ 根组件到子孙组件生命周期是如何同步管理的
+
+这部分代码基于`观察者模式`。
+
+### 生命周期管理流程
+
+`Tocmat`的子组件的生命周期通过父组件管理（*父组件包含子组件的引用，组件都实现`Lifecycle`接口，通过`start()`和`stop()`方法启动和关闭，所以父组件关闭的时候会先通过子组件的引用调用`Lifecycle`接口关闭子组件）。
+
+![](../img/生命周期管理流程.jpeg)
+
++ 接口
+
+  + `Lifecycle`
+
+    启动、关闭、增删监视器、查找监视器。
+
+  + `LifecycleListener`
+
+    定义生命周期监听器的方法，生命周期监听器其实就是各个组件（如：`Context`, `Wrapper`,`Valve`等）。
+
+  + `LifecycleEvent`
+
+    生命周期事件， 定义前面说的6种事件类型。
+
++ 实现
+
+  + `LifecycleSupport`
+
+    生命周期管理的实现类（是`LifecycleListener`的容器），包括添加、查找、删除监听器，触发生命周期事件等方法。
+
+    实现`Lifecycle`接口的组件可以通过添加`LifecycleSupport`成员变量，实现管理生命周期。
+
+    如第6章的`SimpleContext`(根组件)包含一个`LifecycleSupport`的实例, 实现`Lifecycle`的`start()`和`stop()`方法, `start()`先`fireLifecycleEvent()`然后获取所有子容器依次启动它们的`start()`的方法，而它的子容器也是这么处理孙子容器的，从而只需要启动根容器就可以启动下面所有子子孙孙容器。
+
+    如果子孙容器启动异常，会抛出`LifecycleException`, 触发关闭相关事件，执行关闭处理。
+
++ 实例
+
+  示例代码：`ex06.pyrmont`
+
+  这个示例中`SimpleContext`实例`context`为根容器，添加了两个`SimpleWrapper`子容器，分别处理路由`/Primitive`和`/Modern`（具体路由规则看`SimpleContextMapper`），根容器在`HttpConnector`启动后启动。
+
+  ```java
+  //main
+  Context context = new SimpleContext();
+  LifecycleListener listener = new SimpleContextLifecycleListener();
+  ((Lifecycle) context).addLifecycleListener(listener);
+  
+  //容器启动生命周期管理
+  ((Lifecycle) context).start();
+  	//SimpleContext.start()
+  	lifecycle.fireLifecycleEvent(BEFORE_START_EVENT, null);
+  		//LifecycleSupport
+  		LifecycleEvent event = new LifecycleEvent(lifecycle, type, data);
+  		interested[i].lifecycleEvent(event);	//interesterd中存储着前面添加的SimpleContextLifecycleListener实例，lifecycleEvent()是监听器回调方法。
+  	started = true;	//设置下标志位表示此容器已经启动
+  	//后面是启动其他实现Lifecycle的组件（包括pipeline、子容器、...）
+  	if ((loader != null) && (loader instanceof Lifecycle))
+          ((Lifecycle) loader).start();
+  	Container children[] = findChildren();
+      for (int i = 0; i < children.length; i++) {
+          if (children[i] instanceof Lifecycle)
+              ((Lifecycle) children[i]).start();
+      }
+  	if (pipeline instanceof Lifecycle)
+          ((Lifecycle) pipeline).start();
+  
+      lifecycle.fireLifecycleEvent(START_EVENT, null);
+  
+  	lifecycle.fireLifecycleEvent(AFTER_START_EVENT, null);
+  
+  //容器关闭生命周期管理
+  ((Lifecycle) context).stop() //代码流程和启动流程几乎一样，只是一个开一个关
+  ```
+
+  
+
+### Tomcat启动流程
+
+其实主要就是上面的生命周期管理流程。
+
+![](../img/Tomcat启动流程.jpeg)
+
+### `Servlet`生命周期
+
+![](../img/Servlet生命周期.jpeg)
+
+## 请求处理流程
+
+**Tomcat的端口：**
+
++ 8005
+
+  关闭控制端口，监听关闭命令。
+
++ 8009
+
+  集群通信端口，与其他服务器通信，如与Apache、Nginx、其他Tomcat服务器通信，基于AJP协议，可用于请求转发。
+
++ 8080
+
+  默认的http监听端口。
+
++ 8443
+
+  默认的https监听端口。
+
+**Tomcat Server处理http请求的过程:**
+
+![](../img/Tomcat请求处理流程.jpg)
+
+**示例**：
+
+`ex11.pyrmont`
+
+1.连接器创建request和response对象；
+
+2.连接器调用 StandarContext实例的invoke()方法;
+
+3.接着，StandarContext实例的invoke()方法调用其他管道对象的invoke()方法。StandardContext中管道对象的基础阀是StandardContextValve实例，因此，StandardContext的管道对象会调用StandardContextValve实例的invoke()方法；
+
+4.StandardContextValve实例的invoke()方法获取相应的Wrapper实例处理Http请求，调用Wrapper实例的invoke()方法；
+
+5.StandardWraper是Wrapper接口的标准实现，StandardWraper实例的invoke()方法会调用其管道对象的invoke()方法；
+
+6.StandardWraper的管道对象中的基础阀是StandardWraperValve实例，因此，会调用StandardWraperValve的invoke()方法，StandardWraperValve的invoke()方法调用warpper实例的allocate()方法获取Servlet实例；
+
+7.allocate()方法调用load()方法载入相应的Servlet类，若已经载入，则无需重复载入；
+
+8.load()方法调用Servlet实例的init()方法；
+
+9.获取过滤器链，并遍历处理；
+
+10.StandardWrapperValve调用Servlet实例的Servlet的service()方法。
+
+## 连接器`NIO2`多路复用模型
+
+## Session处理
+
+## `JSP`引擎
+
+## 容器优化
+
+##　整体优化
 
 
 
@@ -537,97 +642,6 @@ Tomcat的容器新引入了几个概念：之前的Container加了多个实现�
 
   
 
-## 协同组件的生命周期管理
-
-Catalina启动的时候，组件同步启动；关闭的时候组件同步关闭。如容器停止的时候要唤醒所有加载的`Servlet`的`destory`方法，`session`管理器保存session到二级存储器。
-
-关注内容：
-
-+ 生命周期管理的目的
-
-+ 事件类型
-
-  启动前、启动中、启动后，关闭前、关闭中、关闭后
-
-+ 根组件到子孙组件生命周期是如何同步管理的
-
-这部分代码基于`观察者模式`。
-
-### 生命周期管理流程
-
-`Tocmat`的子组件的生命周期通过父组件管理（*父组件包含子组件的引用，组件都实现`Lifecycle`接口，通过`start()`和`stop()`方法启动和关闭，所以父组件关闭的时候会先通过子组件的引用调用`Lifecycle`接口关闭子组件（新版本也是这样么？待审）*）。
-
-+ 接口
-
-  + `Lifecycle`
-
-    启动、关闭、增删监视器、查找监视器。
-
-  + `LifecycleListener`
-
-    定义生命周期监听器的方法，生命周期监听器其实就是各个组件（如：`Context`, `Wrapper`,`Valve`等）。
-
-  + `LifecycleEvent`
-
-    生命周期事件， 定义前面说的6种事件类型。
-
-+ 实现
-  
-  + `LifecycleSupport`
-  
-    生命周期管理的实现类（是`LifecycleListener`的容器），包括添加、查找、删除监听器，触发生命周期事件等方法。
-  
-    实现`Lifecycle`接口的组件可以通过添加`LifecycleSupport`成员变量，实现管理生命周期。
-  
-    如第6章的`SimpleContext`(根组件)包含一个`LifecycleSupport`的实例, 实现`Lifecycle`的`start()`和`stop()`方法, `start()`先`fireLifecycleEvent()`然后获取所有子容器依次启动它们的`start()`的方法，而它的子容器也是这么处理孙子容器的，从而只需要启动根容器就可以启动下面所有子子孙孙容器。
-  
-    如果子孙容器启动异常，会抛出`LifecycleException`, 触发关闭相关事件，执行关闭处理。
-
-+ 实例
-
-  示例代码：`ex06.pyrmont`
-
-  这个示例中`SimpleContext`实例`context`为根容器，添加了两个`SimpleWrapper`子容器，分别处理路由`/Primitive`和`/Modern`（具体路由规则看`SimpleContextMapper`），根容器在`HttpConnector`启动后启动。
-
-  ```java
-  //main
-  Context context = new SimpleContext();
-  LifecycleListener listener = new SimpleContextLifecycleListener();
-  ((Lifecycle) context).addLifecycleListener(listener);
-  
-  //容器启动生命周期管理
-  ((Lifecycle) context).start();
-  	//SimpleContext.start()
-  	lifecycle.fireLifecycleEvent(BEFORE_START_EVENT, null);
-  		//LifecycleSupport
-  		LifecycleEvent event = new LifecycleEvent(lifecycle, type, data);
-  		interested[i].lifecycleEvent(event);	//interesterd中存储着前面添加的SimpleContextLifecycleListener实例，lifecycleEvent()是监听器回调方法。
-  	started = true;	//设置下标志位表示此容器已经启动
-  	//后面是启动其他实现Lifecycle的组件（包括pipeline、子容器、）
-  	if ((loader != null) && (loader instanceof Lifecycle))
-          ((Lifecycle) loader).start();
-  	Container children[] = findChildren();
-      for (int i = 0; i < children.length; i++) {
-          if (children[i] instanceof Lifecycle)
-              ((Lifecycle) children[i]).start();
-      }
-  	if (pipeline instanceof Lifecycle)
-          ((Lifecycle) pipeline).start();
-  
-      lifecycle.fireLifecycleEvent(START_EVENT, null);
-  
-  	lifecycle.fireLifecycleEvent(AFTER_START_EVENT, null);
-  
-  //容器关闭生命周期管理
-  ((Lifecycle) context).stop() //代码流程和启动流程几乎一样，只是一个开一个关
-  ```
-
-  
-
-## 加入日志系统
-
-日志系统不是核心组件，先放一放。
-
 ## 容器优化
 
 ### 容器内`Servlet`类的动态加载
@@ -710,13 +724,7 @@ Tomcat类库：`WEB-INF/classes` `WEB-INF/lib`。
 
 
 
-## 整体优化
 
-### 引入XML实现配置软编码（Disgester）
-
-### 引入关闭钩子
-
-关闭钩子不知在各种源码里见了多少次。
 
 
 
@@ -729,3 +737,4 @@ Tomcat类库：`WEB-INF/classes` `WEB-INF/lib`。
 [深入理解Tomcat](https://www.jianshu.com/nb/30714822)
 
 [Tomcat组成与工作原理](https://juejin.im/post/6844903473482317837)
+

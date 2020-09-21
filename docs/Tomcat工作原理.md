@@ -1,14 +1,179 @@
-# Tomcat设计思想
+# Tomcat工作原理
 
-文章中部分内容仅为个人观点，有大量待考证的地方。
+## Tomcat核心功能
 
-## Tomcat核心设计
+Tomcat最核心的东西就是建立Socket连接，读请求报文输入流，根据请求内容进行处理，处理后写响应报文输出流。
 
-核心的东西就是Socket连接，读请求报文输入流，处理后写回复报文输出流。
-
-然后就是围绕着这个将通用的逻辑模块化，将变化的部分抽离出来，通过“容器”加载。
+核心功能示例：`tomcat01.socket`。
 
 **要做的三件事**：
+
++ 创建`request`对象，填充请求的参数、头部、cookies、查询字符串、URI等等。
+
+  实现`javax.servlet.ServletRequest` 或 `javax.servlet.http.ServletRequest `接口。
+
++ 创建response对象，用于将响应发送回客户端。
+
+  实现`javax.servlet.ServletResponse` 或`javax.servlet.http.ServletResponse`接口。
+
++ 调用`servlet`的`service`方法，并传入`request`和`response`对象，从`request`对象取值，处理，写入`response`对象。
+
+然后就是围绕着这个将通用的逻辑模块化(如：连接器`Connector`、各级容器[Service、Engine、Host、Context、Wrapper、)，将变化的部分抽离出来（如：`Servlet`、配置）。
+
+## Tomcat架构和组件
+
+![](../img/Tomcat组件及架构.jpg)
+
+**核心组件：**
+
++ **Connector**
+
++ **Container**
+
+  容器（Container）主要包括四种，Engine、Host、Context和Wrapper。
+
+  + Server（不是Container）
+
+    Tomcat包启动在某个端口上的服务实例。一台物理服务器可以启动多个`Server`在不同的端口上。
+  
+  + Service（不是Container）
+  
++ **Engine**(?)
+  
++ **Host**
+  
+    虚拟主机。比如一个Tomcat要支持多个域名。
+  
+    ```xml
+    <Host name="www.ramki.com" appbase="ramki_webapps" />
+    ```
+  
+  + **Context**
+  
+    叫做上下文容器，我们可以看成`应用服务`，每个Host里面可以运行多个应用服务。同一个Host里面不同的Context，其contextPath必须不同，默认Context的contextPath为空格("")或斜杠(/)。
+  
+  + **Wrapper**
+  
+    Servlet的抽象和包装，每个Context可以有多个Wrapper，用于支持不同的Servlet。另外，每个JSP其实也是一个个的Servlet。
+  
+  容器中为何要引入这么多种容器类型？
+  
+  个人认为为了支持分门别类地放更多的`Servlet`。比如图书馆，存书时是把书直接堆在一起还是按大类分馆，按中间类分楼层，按小类分室，按细分类分架。类分地越细，某一类的通用处理就越容易加入。
+
+
+
+**辅助组件：**
+
++ **listener**
+
+  实现生命周期管理。
+
++ **Resource/ResourceLink**
+
+  定义`Servlet`等资源的。
+
++ **Realm**
+
+  安全认证相关控制。
+
+  可以在这里面添加BASIC、DEGEST、FORM等等用户认证实现。
+
++ **Loader**
+
+  Servlet类加载器。
+
++ JNDI
++ Cluster
++ Manager
+
+
+
+Engine -> Host -> Context -> Wrapper。
+
+> 
+>
+> **Server** 
+>
+> ​		Tomcat包在物理服务器启动后的实例，
+>
+> ​		靠端口区分，一台机器上可以有多个Server启动在不同端口。
+>
+> **Service**(?)
+>
+> ​		不明白为何要这一层？支持多域名（可能一台主机被分配多个域名）？
+>
+> ​		通常对应着一个Engine容器，是多个Connector和一个Executor池和一个Engine的集合; 
+>
+> Server和Service并不是Container实现类。
+>
+> 
+>
+> ​		一一对应某个Service。通过name匹配Service, 并附加host属性。
+>
+> **Host**(?)
+>
+> ​		支持多个Web应用，多应用分发逻辑应该在这里实现的？
+>
+> ​		通过appBase目录区分，一个Engine可以有多个Host。
+>
+> 
+>
+> ​		表示一个 Web 应用（对应一个appBase目录下的某个应用文件夹）;
+>
+> ​		通过appBase目录下的子目录区分，一个Host可以有多个Context。
+>
+> 
+>
+> ​		一个Servlet的封装。一个 context 包含一个或多个wrapper。
+
+这部分只分析`Context`和`Wrapper`容器的引入。
+
+## 生命周期管理
+
+### Tomcat启动流程
+
+### 配置初始化与加载
+
+### `Servlet`生命周期
+
+## 请求处理流程
+
+**Tomcat的端口：**
+
++ 8005
+
+  关闭控制端口，监听关闭命令。
+
++ 8009
+
+  集群通信端口，与其他服务器通信，如与Apache、Nginx、其他Tomcat服务器通信，基于AJP协议，可用于请求转发。
+
++ 8080
+
+  默认的http监听端口。
+
++ 8443
+
+  默认的https监听端口。
+
+### Tomcat Server处理http请求的过程
+
+
+
+假设来自客户的请求为：
+http://localhost:8080/wsota/wsota_index.jsp
+
+1) 请求被发送到本机端口8080，被在那里侦听的Coyote HTTP/1.1 Connector获得
+2) Connector把该请求交给它所在的Service的Engine来处理，并等待来自Engine的回应
+3) Engine获得请求localhost/wsota/wsota_index.jsp，匹配它所拥有的所有虚拟主机Host
+4) Engine匹配到名为localhost的Host（即使匹配不到也把请求交给该Host处理，因为该Host被定义为该Engine的默认主机）
+5) localhost Host获得请求/wsota/wsota_index.jsp，匹配它所拥有的所有Context
+6) Host匹配到路径为/wsota的Context（如果匹配不到就把该请求交给路径名为""的Context去处理）
+7) path="/wsota"的Context获得请求/wsota_index.jsp，在它的mapping table中寻找对应的servlet
+8) Context匹配到URL PATTERN为*.jsp的servlet，对应于JspServlet类
+9) 构造HttpServletRequest对象和HttpServletResponse对象，作为参数调用JspServlet的doGet或doPost方法
+10)Context把执行完了之后的HttpServletResponse对象返回给Host
+11)Host把HttpS**要做的三件事**：
 
 + 创建request对象，填充请求的参数、头部、cookies、查询字符串、URI等等。
 
@@ -18,7 +183,27 @@
 
   实现javax.servlet.ServletResponse 或 javax.servlet.http.ServletResponse 接口。
 
-+ 调用servlet的service方法，并传入request和response对象，从request对象取值，处理，写入response对象。
++ 调用servlet的service方法，并传入request和response对象，从request对象取值，处理，写入response对象。ervletResponse对象返回给Engine
+12)Engine把HttpServletResponse对象返回给Connector
+13)Connector把HttpServletResponse对象返回给客户browser
+
+## `JSP`引擎
+
+## 连接器`NIO2`多路复用模型
+
+## Session处理
+
+
+
+
+
+## Tomcat核心设计
+
+核心的东西就是Socket连接，读请求报文输入流，处理后写回复报文输出流。
+
+然后就是围绕着这个将通用的逻辑模块化，将变化的部分抽离出来，通过“容器”加载。
+
+
 
 **Catalina核心架构**：
 
@@ -330,47 +515,7 @@ Tomcat的容器新引入了几个概念：之前的Container加了多个实现�
 
 ![](../img/Tomcat组件及架构.jpg)
 
-Engine -> Host -> Context -> Wrapper。
 
-> 容器中为何要引入这么多种容器类型？
->
-> 个人认为为了支持分门别类地放更多的`Servlet`。比如图书馆，存书时是把书直接堆在一起还是按大类分馆，按中间类分楼层，按小类分室，按细分类分架。类分地越细，某一类的通用处理就越容易加入。
->
-> **Server** 
->
-> ​		Tomcat包在物理服务器启动后的实例，
->
-> ​		靠端口区分，一台机器上可以有多个Server启动在不同端口。
->
-> **Service**(?)
->
->    ​		不明白为何要这一层？支持多域名（可能一台主机被分配多个域名）？
->
-> ​		通常对应着一个Engine容器，是多个Connector和一个Executor池和一个Engine的集合; 
->
-> Server和Service并不是Container实现类。
->
-> **Engine**(?)
->
-> ​		一一对应某个Service。通过name匹配Service, 并附加host属性。
->
-> **Host**(?)
->
-> ​		支持多个Web应用，多应用分发逻辑应该在这里实现的？
->
-> ​		通过appBase目录区分，一个Engine可以有多个Host。
->
-> **Context**
->
-> ​		表示一个 Web 应用（对应一个appBase目录下的某个应用文件夹）;
->
-> ​		通过appBase目录下的子目录区分，一个Host可以有多个Context。
->
-> **Wrapper**
->
-> ​		一个Servlet的封装。一个 context 包含一个或多个wrapper。
-
-这部分只分析`Context`和`Wrapper`容器的引入。
 
 ### 核心类
 
@@ -575,3 +720,12 @@ Tomcat类库：`WEB-INF/classes` `WEB-INF/lib`。
 
 
 
+
+
+## 参考资料
+
+《How Tomcat Works》
+
+[深入理解Tomcat](https://www.jianshu.com/nb/30714822)
+
+[Tomcat组成与工作原理](https://juejin.im/post/6844903473482317837)
